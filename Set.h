@@ -32,7 +32,6 @@ class Set
     int lungime;
 public:
 
-	
     Set();
 
     Set(T x);
@@ -48,9 +47,12 @@ public:
     arbore<T>* getRadacina();
 
     int size();
-
+    bool cautareT(arbore<T>* ,T ElementDeCautat);
+    arbore<T>* getAdress(arbore<T>* radacina, T valoare);
     Set<T,key>& operator=(const Set<T,key>& s);
-    //friend ostream& operator<<(ostream& out, Set<T,key>& s);
+
+    template<typename V>
+    friend ostream& operator<<(ostream& out, Set<V,V>& s); 
     ~Set();
 };
 template<typename T,class key>
@@ -60,6 +62,7 @@ Set<T,key>::Set() {                                     //constructorul fara par
 }
 template<typename T, class key>
 Set<T, key>::Set(T x) {                                 //constructorul fara parametri care imi creeaza 'radacina' arborelui
+    //comp=comparator<key>;
     radacina = radacina->nod(x);
     lungime++;
 };                                  //imi creez un arbore de un singur nod,deoarece vom crea setul prin inserari;
@@ -83,22 +86,48 @@ Set<T, key>::Set(const Set<T, key>& s)
         return;
     }
 }
+template<typename T, class key>
+bool Set<T, key>::cautareT(arbore<T>* radacina,T ElementDeCautat)
+{//returneaza 1 daca un element este gasit,returneaza 0 in caz contrar
+    if (radacina == NULL)return 0;                            //daca setul meu este gol nu am cu ce sa compar
+    if (comp(ElementDeCautat, radacina->getInfo()) == 1)return 1;
+    if(radacina->getStang()!=NULL)                                      //daca am fiu stang atunci continui cautarea in subarborele stang
+        return cautareT(radacina->getStang(),ElementDeCautat);
+    if (radacina->getDrept() != NULL)                                   //daca am fiu drept atuni continui cautarea in subarborele drept
+        return cautareT(radacina->getDrept(),ElementDeCautat);
+    return 0;
+}
+template<typename T, class key>
+arbore<T>* Set<T, key>::getAdress(arbore<T>* radacina,T ElementDeCautat)
+{
+    if (radacina == NULL)return nullptr;                            //daca setul meu este gol 
+    if (comp(ElementDeCautat, radacina->getInfo()) == 1)return radacina;
+    if (radacina->getStang() != NULL)                                      //daca am fiu stang atunci continui cautarea in subarborele stang
+        return getAdress(radacina->getStang(), ElementDeCautat);
+    if (radacina->getDrept() != NULL)                                   //daca am fiu drept atuni continui cautarea in subarborele drept
+        return getAdress(radacina->getDrept(), ElementDeCautat);
+    return nullptr;
+}
 
 template<typename T, class key>
 void Set<T, key>::erase(T y) {
-    radacina->stergere(radacina, y);
-    lungime--;
+   arbore<T>* aux= getAdress(radacina, y);          //obtin adresa elementului de sters in functie de template ul comparator
+   if (aux == nullptr)
+   {
+       throw std::domain_error("Elementul nu exista"); //in cazul in care trebuie sa stergem ceva ce nu exista aruncam o eroare
+   }
+   radacina->stergere(radacina,aux->getInfo());     //sterg informatia de la adresa
 }
 
 template<typename T, class key>
 bool Set<T, key>::find(T x) {
-    return radacina->cautare(radacina, x);
+    return cautareT(this->radacina,x);
 }
 
 template<typename T, class key>
 void Set<T, key>::insert(T valoare)
 {
-    if (radacina->cautare(radacina, valoare) == 0)   //ne asiguram ca nu avem duplicate pentru a putea insera o noua valoare
+    if (cautareT(this->radacina,valoare) == 0)   //ne asiguram ca nu avem duplicate pentru a putea insera o noua valoare
     {
         radacina->inserare(radacina, valoare);
         this->lungime = lungime + 1;                    //la fiecare inserare crestem marimea setului
@@ -153,7 +182,7 @@ Set<T,key>& Set<T,key>:: operator=(const Set<T,key>& s)
     return *this;
 }
 
-template<typename T, class key>
+template<typename T, class key=comparator<T> >
 ostream& operator<<(ostream& out,Set<T,key>& s)
 {
     if (s.getRadacina() == NULL)                                 //in cazul in care setul este vid se arunca o eroare
