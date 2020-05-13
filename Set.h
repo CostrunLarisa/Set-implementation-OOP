@@ -47,12 +47,14 @@ public:
     arbore<T>* getRadacina();
 
     int size();
+    arbore<T>* RecursiveCopy(arbore<T>* ob, arbore<T>* &modifElem);
     bool cautareT(arbore<T>* ,T ElementDeCautat);
     arbore<T>* getAdress(arbore<T>* radacina, T valoare);
     Set<T,key>& operator=(const Set<T,key>& s);
 
     template<typename V>
     friend ostream& operator<<(ostream& out, Set<V,V>& s); 
+    void RecursiveDestructor(arbore<T>* start);
     ~Set();
 };
 template<typename T,class key>
@@ -62,7 +64,7 @@ Set<T,key>::Set() {                                     //constructorul fara par
 }
 template<typename T, class key>
 Set<T, key>::Set(T x) {                                 //constructorul fara parametri care imi creeaza 'radacina' arborelui
-    //comp=comparator<key>;
+    comp=comparator<key>;
     radacina = radacina->nod(x);
     lungime++;
 };                                  //imi creez un arbore de un singur nod,deoarece vom crea setul prin inserari;
@@ -70,21 +72,9 @@ template<typename T, class key>
 Set<T, key>::Set(const Set<T, key>& s)
 {
     arbore<T>* root = s.radacina;
+    this->radacina = root;
     this->lungime = s.lungime;
-    while (true)
-    {
-        if (root->getStang() != NULL)
-        {
-            this->radacina->setStang(root->getStang());
-            root = root->getStang();
-        }
-        else if (root->getDrept() != NULL)
-        {
-            this->radacina->setDrept(root->getDrept());
-            root = root->getDrept();
-        }
-        return;
-    }
+    RecursiveCopy(root, this->radacina);
 }
 template<typename T, class key>
 bool Set<T, key>::cautareT(arbore<T>* radacina,T ElementDeCautat)
@@ -93,18 +83,18 @@ bool Set<T, key>::cautareT(arbore<T>* radacina,T ElementDeCautat)
     if (comp(ElementDeCautat, radacina->getInfo()) == 1)return 1;
     if(radacina->getStang()!=NULL)                                      //daca am fiu stang atunci continui cautarea in subarborele stang
         return cautareT(radacina->getStang(),ElementDeCautat);
-    if (radacina->getDrept() != NULL)                                   //daca am fiu drept atuni continui cautarea in subarborele drept
+    if (radacina->getDrept() != NULL)                                   //daca am fiu drept atunci continui cautarea in subarborele drept
         return cautareT(radacina->getDrept(),ElementDeCautat);
     return 0;
 }
 template<typename T, class key>
-arbore<T>* Set<T, key>::getAdress(arbore<T>* radacina,T ElementDeCautat)
+arbore<T>* Set<T, key>::getAdress(arbore<T>* radacina,T ElementDeCautat)    //metoda care cauta adresa unei valori conform comparatorului
 {
     if (radacina == NULL)return nullptr;                            //daca setul meu este gol 
     if (comp(ElementDeCautat, radacina->getInfo()) == 1)return radacina;
     if (radacina->getStang() != NULL)                                      //daca am fiu stang atunci continui cautarea in subarborele stang
         return getAdress(radacina->getStang(), ElementDeCautat);
-    if (radacina->getDrept() != NULL)                                   //daca am fiu drept atuni continui cautarea in subarborele drept
+    if (radacina->getDrept() != NULL)                                   //daca am fiu drept atunci continui cautarea in subarborele drept
         return getAdress(radacina->getDrept(), ElementDeCautat);
     return nullptr;
 }
@@ -121,8 +111,8 @@ void Set<T, key>::erase(T y) {
 
 template<typename T, class key>
 bool Set<T, key>::find(T x) {
-    return cautareT(this->radacina,x);
-}
+    return cautareT(this->radacina,x);                  //metoda care returneaza 1 daca un element se afla in set,0 in caz contrar
+}                                                       //asemanatoare cu cautareT,redenumita 'find' pentru a se asemana cu cea din STL
 
 template<typename T, class key>
 void Set<T, key>::insert(T valoare)
@@ -147,6 +137,25 @@ int Set<T, key>::size()
     if (this->radacina == NULL)return 0;  //in cazul in care am un set gol;
     return lungime;
 }
+template<typename T, class key>
+arbore<T>* Set<T, key>::RecursiveCopy(arbore<T>* start,arbore<T>* &modifElem)
+{
+    if (start == NULL) return modifElem;                //daca nu mai am nimic atunci am terminat de copiat
+    if (start->getStang() != nullptr)
+    {
+        RecursiveCopy(start->getStang(),modifElem);       //copiez subarborele stang,pentru fiecare nod
+        modifElem->inserare(modifElem, start->getStang()->getInfo());
+    }
+
+    if (start->getDrept() != nullptr)
+    {
+        RecursiveCopy(start->getDrept(),modifElem);         //copiez subarborele drept,pentru fiecare nod
+        modifElem->inserare(modifElem, start->getDrept()->getInfo());
+    }
+
+    modifElem->inserare(modifElem, start->getInfo());
+    return modifElem;
+}
 
 template<typename T, class key>
 Set<T,key>& Set<T,key>:: operator=(const Set<T,key>& s)
@@ -160,23 +169,11 @@ Set<T,key>& Set<T,key>:: operator=(const Set<T,key>& s)
         if (root->getStang() == NULL && root->getDrept() == NULL)       //daca nu exista fii,atunci avem doar radacina si o copiem
         {
             this->radacina = root;
+            return *this;
         }
         else {
-            while (true)                                                    //in caz contrar,cat timp nu am ramas fara fii,inserezin obiectul meu curent
-                                                                            //nodurile obiectului primit
-            {
-                if (root->getStang() != NULL)
-                {
-                    radacina->inserare(radacina, root->getStang()->getInfo());
-                    root = root->getStang();
-                }
-                else if (root->getDrept() != NULL)
-                {
-                    radacina->inserare(radacina, root->getDrept()->getInfo());
-                    root = root->getDrept();
-                }
-                return *this;
-            }
+            RecursiveCopy(root, this->radacina);        //copiez recursiv ce am in subarborele stang si drept
+            return *this;
         }
     }
     return *this;
@@ -187,35 +184,42 @@ ostream& operator<<(ostream& out,Set<T,key>& s)
 {
     if (s.getRadacina() == NULL)                                 //in cazul in care setul este vid se arunca o eroare
     {
-        throw std::domain_error("Empty set");
+        throw domain_error("Empty set");
     }
     else {
         s.getRadacina()->SRD(s.getRadacina());                        //in caz contrar apelam parcurgerea stang-radacina-drept din arbore pentru a afisa 
-                                                            //elementele in ordine crescatoare;
-    }
+    }                                                      //elementele in ordine crescatoare;
+    
     return out;
 }
 
 template<typename T, class key>
-Set<T,key>::~Set() {
-    while (this->radacina->getStang() != NULL || this->radacina->getDrept() != NULL)  //atata timp cat am si fiu stang si fiu drept incepstergerea
+void Set<T, key>::RecursiveDestructor(arbore<T>* start)
+{
+    if (start == nullptr)           //cat timp nu am ajung la final
+        return;
+
+    if (start->getStang() != nullptr)
     {
-        if (radacina->getStang() != NULL)
-        {
-            arbore<T>* aux = radacina;
-            radacina = radacina->getStang();
-            delete aux;
-        }
-        if (radacina->getDrept() != NULL)
-        {
-            arbore<T>* auxx = radacina;
-            radacina = radacina->getDrept();
-            delete auxx;
-        }
+        RecursiveDestructor(start->getStang());       //sterg subarborele stang,pentru fiecare nod
     }
-    lungime = 0;
-    arbore<T>* aux = radacina;                      //daca nu am fii sau daca am sters toti fiii,radacina este stearsa si ea si devina null
-    delete aux;
-    radacina = NULL;
+
+    if (start->getDrept() != nullptr)
+    {
+        RecursiveDestructor(start->getDrept());         //sterg subarborele drept,pentru fiecare nod
+
+    }
+
+    delete start->getDrept();
+    delete start->getStang();
+}
+
+template<typename T, class key>
+Set<T,key>::~Set() {
+    if (radacina != nullptr)           //atata timp cat destructorul nu este deja gol,apelez functia recursiva de stergere si reinitializez lungimea
+    {
+        RecursiveDestructor(radacina);
+        lungime = 0;
+    }
 }
 #endif

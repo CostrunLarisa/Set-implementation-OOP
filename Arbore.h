@@ -14,7 +14,6 @@ class arbore
     arbore* drept;
 
 public:
-	~arbore() = default;
     arbore();
     arbore* getStang();
     arbore* getDrept();
@@ -30,10 +29,11 @@ public:
     arbore<T>* getMinim(arbore* radacina);
     arbore<T>* getMaxim(arbore* radacina);
     void setParent(arbore*& aux, arbore*& parinte, T x);
-    arbore<T>* stergere(arbore*& radacina, T x);
+    arbore<T>* stergere(arbore* &radacina, T x);
     int checkHeight(arbore* radacina);
     arbore<T>* rotatieStanga(arbore* radacina);
     arbore<T>* rotatieDreapta(arbore* radacina);
+    ~arbore()=default;
 };
 
 
@@ -95,32 +95,34 @@ int arbore<T>::getInaltime() {                     //getter pentru inaltimea une
 template<typename T>
 arbore<T>* arbore<T>::inserare(arbore*& radacina, T x)
 {
-    arbore* p = nod(x);
+   arbore* p = nod(x);
     if (radacina == NULL)        //daca arborele este gol si am apelat  constructorul fara parametri
                                            //asta inseamna ca am creat obiectul set,insa nu are nici o informati
                                            //asa ca punem informatia in setul gol creat;
     {
         radacina = nod(x);
         return radacina;
-    }
+    } 
+    
     arbore* aux = radacina;
     arbore* parinte = NULL;     //retinem ultimul parinte
     while (aux != NULL)
     {
         parinte = aux;
-        if (x < aux->info)      //cautam sa vedem unde trebuie sa inseram astfel incat sa pastram proprietatile:cele mai mari valori in dreapta
-                                //cele mai mici valori in stanga
+        if (x < aux->info)      
             aux = aux->stang;
         else
             aux = aux->drept;
     }
     if (parinte == NULL)
         parinte = p;
-    else if (x < parinte->getInfo()) {
+    else if (x < parinte->getInfo()) {  //cautam sa vedem unde trebuie sa inseram astfel incat sa pastram proprietatile:cele mai mari valori in dreapta
+                                                //cele mai mici valori in stanga
         parinte->setStang(p);
     }
     else parinte->setDrept(p);
-    if (parinte->stang != NULL && parinte->drept != NULL)
+    if (parinte->stang != NULL && parinte->drept != NULL)               //in continuare modific inaltimea corespunzatoare radacinii curente
+                                                                        //in mod evident,iau inaltimea cea mai mare 
     {
         if (parinte->stang->inaltime > parinte->drept->inaltime)
             parinte->inaltime = 1 + parinte->stang->inaltime;
@@ -130,17 +132,21 @@ arbore<T>* arbore<T>::inserare(arbore*& radacina, T x)
         parinte->inaltime = 1 + parinte->drept->inaltime;
     if (parinte->drept == NULL && parinte->stang != NULL)
         parinte->inaltime = 1 + parinte->stang->inaltime;
-    int dif_inaltime = checkHeight(parinte);
-
-    if (dif_inaltime > 1 && checkHeight(parinte->stang) > 0)
+    int dif_inaltime = checkHeight(parinte);                        //verific daca diferenta dintre subarbori este < 1
+     //Vericam daca ne incadram in cazul stanga->stanga
+    if (dif_inaltime > 1 && checkHeight(parinte->stang) > 0)        //daca diferenta nu corespunde proprietatii si subarborele stang e mai mare
+                                                                    //se face o rotatie spre dreapta
         return rotatieDreapta(parinte);
+    //Vericam daca ne incadram in cazul dreapta->dreapta
     if (dif_inaltime > 1 && checkHeight(parinte->stang) < 0)
     {
         parinte->stang = rotatieStanga(parinte->stang);
         return rotatieDreapta(parinte);
     }
+    //Vericam daca ne incadram in cazul stanga->dreapta
     if (dif_inaltime < -1 && checkHeight(parinte->drept) < 0)
         parinte = rotatieStanga(parinte);
+    //Vericam daca ne incadram in cazul dreapta->stanga
     if (dif_inaltime < -1 && checkHeight(radacina->drept) > 0)
     {
         parinte->drept = rotatieDreapta(parinte->drept);
@@ -152,11 +158,11 @@ arbore<T>* arbore<T>::inserare(arbore*& radacina, T x)
 template<typename T>
 bool arbore<T>::cautare(arbore* radacina, T x)
 {
-    if (radacina == NULL)
+    if (radacina == NULL)           //daca radacina e null ma opresc
         return 0;
     if (radacina->getInfo() == x)
         return 1;
-    bool st = cautare(radacina->stang, x);
+    bool st = cautare(radacina->stang, x);      //in caz contrar caut valoarea in subarborele stang si drept
     if (st)return 1;
     bool dr = cautare(radacina->drept, x);
     return dr;
@@ -175,7 +181,7 @@ void arbore<T>::SRD(arbore* radacina)
 }                   //parcurgere SRD care imi afiseaza elementele arborelui in ordine crescatoare
 
 template<typename T>
-arbore<T>* arbore<T>::getMinim(arbore* radacina)
+arbore<T>* arbore<T>::getMinim(arbore* radacina)  //metoda care imi intoarce minimul din arbore,minimul se afla in subarborele stang
 {
     arbore* p = radacina;
     while (p && p->stang != NULL)
@@ -184,7 +190,7 @@ arbore<T>* arbore<T>::getMinim(arbore* radacina)
 }
 
 template<typename T>
-arbore<T>* arbore<T>::getMaxim(arbore* radacina)
+arbore<T>* arbore<T>::getMaxim(arbore* radacina) //metoda care imi intoarce minimul din arbore,minimul se afla in subarborele drept
 {
     arbore* p = radacina;
     while (p && p->getDrept() != NULL)
@@ -206,7 +212,7 @@ void arbore<T>::setParent(arbore*& aux, arbore*& parinte, T x)  //metoda care im
 }
 
 template<typename T>
-arbore<T>* arbore<T>::stergere(arbore*& radacina, T x)
+arbore<T>* arbore<T>::stergere(arbore* &radacina, T x)
 {
     arbore* y = NULL;
     arbore* aux = radacina;
@@ -241,11 +247,11 @@ arbore<T>* arbore<T>::stergere(arbore*& radacina, T x)
         else radacina = q;
         delete aux;
     }
-    if (!radacina)return radacina;
+    if (!radacina)return radacina;          //daca nu mai am nimic in radacina nu continui
     if (radacina->stang->getInaltime() > radacina->drept->getInaltime() && radacina->stang != NULL)radacina->inaltime = 1 + radacina->stang->getInaltime();//noua inaltime a radacinii va fi in mod evident inaltimea cea mai mare a unui subarbore+1(nod curent)
     else if (radacina->drept != NULL) radacina->inaltime = 1 + radacina->drept->inaltime;
-    int dif_inaltime = checkHeight(radacina);
-    if (dif_inaltime > 1 && checkHeight(radacina->stang) > 0)
+    int dif_inaltime = checkHeight(radacina);                   //verific daca diferenta inaltimilor din subarbori este <1
+    if (dif_inaltime > 1 && checkHeight(radacina->stang) > 0)   //procedez la fel ca la inserare
         radacina = rotatieDreapta(radacina);
     if (dif_inaltime > 1 && checkHeight(radacina->stang) < 0)
     {
@@ -269,9 +275,6 @@ int arbore<T>::checkHeight(arbore* radacina)  //metoda care returneaza diferenta
 {
     if (radacina != NULL)
     {
-        //if (radacina->stang == NULL)return radacina->drept->inaltime;//daca unul dintre fii este null,returnam inaltimea unuia
-        //if (radacina->drept == NULL)return radacina->stang->inaltime;
-        //if (radacina->drept->inaltime > radacina->stang->inaltime)return radacina->drept->inaltime - radacina->stang->inaltime;
         if (radacina->stang != NULL && radacina->drept != NULL)
             return radacina->stang->inaltime - radacina->drept->inaltime;
         if (radacina->stang == NULL && radacina->drept != NULL)
@@ -286,13 +289,14 @@ int arbore<T>::checkHeight(arbore* radacina)  //metoda care returneaza diferenta
 template<typename T>
 arbore<T>* arbore<T>::rotatieStanga(arbore* radacina)
 {
-    arbore* p = radacina->drept;
-    arbore* q = p->stang;
+    arbore* p = radacina->drept;                    //retin ce am in subarborele drept
+    arbore* q = p->stang;                           //retin ce am in fiul stang al subarborelui drept
 
-    p->stang = radacina;
-    radacina->drept = q;
-    if (radacina->stang->inaltime > radacina->drept->inaltime)
-    {
+    p->stang = radacina;                            //fiul stang al subarborelui drept ia valoarea radacinii
+    radacina->drept = q;                                //fiul drept al radacinii devine fiul stang al subarborelui drept
+                                                    //ulterior radacina va fi p
+    if (radacina->stang->inaltime > radacina->drept->inaltime)      //reactualizez inaltimile
+    {       
         radacina->inaltime = 1 + radacina->stang->inaltime;
     }
     else {
@@ -335,7 +339,4 @@ arbore<T>* arbore<T>::rotatieDreapta(arbore* radacina)
 
 
 }
-
-
-
 #endif
